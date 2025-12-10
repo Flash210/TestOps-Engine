@@ -52,7 +52,7 @@ jobs:
       matrix:
         # Run tests on these operating systems
         os: [ubuntu-latest]  # You can add: windows-latest, macos-latest
-        node-version: [18.x] # Node.js version to use
+        node-version: [20.x] # Node.js version to use
     
     # The operating system the job runs on
     runs-on: ${{ matrix.os }}
@@ -197,3 +197,4 @@ jobs:
 # 4. Matrix strategy runs jobs in parallel (faster execution)
 # 5. 'if: always()' ensures steps run even when tests fail
 # 6. Cache speeds up subsequent runs by storing npm packages
+# 7. Node.js 20.x is required for Cucumber.js 12.3.0+

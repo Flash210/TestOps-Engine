@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test":"cucumber-js test"
+    "pretest": "npx ts-node src/helpers/init.ts",
+    "test": "cucumber-js test || true ",
+    "posttest": "npx ts-node src/helpers/report.ts",
+    "test:failed": "cucumber-js -p rerun@renun.txt"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +17,8 @@
     "@cucumber/cucumber": "^12.3.0",
     "@playwright/test": "^1.57.0",
     "@types/node": "^24.10.2",
+    "fs-extra": "^11.3.2",
+    "multiple-cucumber-html-reporter": "^3.9.3",
     "ts-node": "^10.9.2"
   }
 }

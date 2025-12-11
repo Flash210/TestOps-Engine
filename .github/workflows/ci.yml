@@ -1,0 +1,230 @@
+# ============================================
+# GitHub Actions CI/CD Pipeline
+# ============================================
+# This workflow automates testing whenever code is pushed or a PR is created
+# It runs your Playwright + Cucumber tests and generates reports
+
+name: TestOps Engine - E2E Tests
+
+# ============================================
+# TRIGGER CONDITIONS
+# ============================================
+# This section defines WHEN the pipeline runs
+on:
+  # Trigger on push to these branches
+  push:
+    branches: 
+      - main          # Runs when you push to main branch
+      - master        # Runs when you push to master branch
+      - develop       # Runs when you push to develop branch
+  
+  # Trigger on Pull Requests to these branches
+  pull_request:
+    branches: 
+      - main
+      - master
+      - develop
+  
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Test tags to run (e.g., @smoke, @positive)'
+        required: false
+        default: ''
+
+# ============================================
+# PERMISSIONS
+# ============================================
+# Required for the workflow to comment on PRs and deploy to GitHub Pages
+permissions:
+  contents: write        # Allows pushing to gh-pages branch
+  issues: write          # Allows commenting on Pull Requests
+  pull-requests: write   # Allows commenting on Pull Requests
+  pages: write           # Allows deployment to GitHub Pages
+  id-token: write        # Required for GitHub Pages deployment
+
+# ============================================
+# JOBS
+# ============================================
+# Jobs are the main work units - you can have multiple jobs running in parallel
+jobs:
+  # -------------------------------------------
+  # JOB 1: Run E2E Tests
+  # -------------------------------------------
+  test:
+    # Name displayed in GitHub Actions UI
+    name: Run E2E Tests on ${{ matrix.os }}
+    
+    # Strategy allows running tests on multiple environments
+    strategy:
+      # Don't cancel other jobs if one fails
+      fail-fast: false
+      matrix:
+        # Run tests on these operating systems
+        os: [ubuntu-latest]  # You can add: windows-latest, macos-latest
+        node-version: [20.x] # Node.js version to use
+    
+    # The operating system the job runs on
+    runs-on: ${{ matrix.os }}
+    
+    # -------------------------------------------
+    # STEPS - Sequential tasks in this job
+    # -------------------------------------------
+    steps:
+      # STEP 1: Checkout code from repository
+      # This downloads your code to the GitHub runner
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all branches
+      
+      # STEP 2: Setup Node.js environment
+      # Installs Node.js on the runner
+      - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'  # Cache npm dependencies for faster builds
+      
+      # STEP 3: Install system dependencies and fonts
+      # Essential fonts for Playwright screenshots on Ubuntu 24.04
+      - name: 🔧 Install System Dependencies & Fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            fonts-liberation \
+            fonts-dejavu-core \
+            fonts-dejavu-extra \
+            fonts-noto-color-emoji \
+            fontconfig \
+            libfontconfig1 \
+            libfreetype6
+          # Refresh font cache
+          sudo fc-cache -f -v
+        # Only run on Linux
+        if: runner.os == 'Linux'
+      
+      # STEP 4: Install dependencies
+      # Installs all packages from package.json
+      - name: 📦 Install Dependencies
+        run: npm ci  # 'npm ci' is faster and more reliable than 'npm install' for CI
+      
+      # STEP 5: Install Playwright browsers
+      # Playwright needs browser binaries (Chrome, Firefox, etc.)
+      - name: 🎭 Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+        # --with-deps installs system dependencies needed by browsers
+      
+      # STEP 6: Run tests
+      # Execute your test suite
+      - name: 🧪 Run E2E Tests
+        run: npm test
+        # This runs your test script from package.json
+        continue-on-error: true  # Continue even if tests fail (to generate reports)
+      
+      # STEP 7: Run failed tests (optional rerun)
+      # Retry failed tests to reduce flakiness
+      - name: 🔄 Rerun Failed Tests
+        if: failure()  # Only runs if previous step failed
+        run: npm run test:failed
+        continue-on-error: true
+      
+      # STEP 8: Upload Test Results as Artifacts
+      # Save test reports so you can download them later
+      - name: 📊 Upload Test Results
+        if: always()  # Always run this step, even if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: test-results/
+          retention-days: 30  # Keep artifacts for 30 days
+      
+      # STEP 9: Upload Screenshots on Failure
+      # Save failure screenshots for debugging
+      - name: 📸 Upload Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ matrix.os }}
+          path: test-results/screenshots/
+          retention-days: 30
+      
+      # STEP 10: Publish Test Report to GitHub Pages (Optional)
+      # Makes reports viewable as a website
+      - name: 📄 Deploy Report to GitHub Pages
+        if: always() && github.ref == 'refs/heads/main'  # Only on main branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./test-results
+          destination_dir: reports/${{ github.run_number }}
+      
+      # STEP 11: Comment PR with Test Results (Optional)
+      # Add test summary as a comment on Pull Requests
+      - name: 💬 Comment Test Results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let comment = '## 🧪 Test Results\n\n';
+            
+            try {
+              // Read test results (you may need to parse JSON report)
+              comment += '✅ Tests completed! Check artifacts for detailed reports.\n';
+              comment += `- 📊 [View Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
+              comment += `- 📸 Screenshots available in artifacts\n`;
+            } catch (error) {
+              comment += '⚠️ Could not parse test results\n';
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # -------------------------------------------
+  # JOB 2: Test Summary (Optional)
+  # -------------------------------------------
+  test-summary:
+    name: 📋 Test Summary
+    needs: test  # This job runs after 'test' job completes
+    runs-on: ubuntu-latest
+    if: always()  # Run even if test job fails
+    
+    steps:
+      - name: 📥 Download Test Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+      
+      - name: 📊 Generate Summary
+        run: |
+          echo "## Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workflow Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📦 Artifacts uploaded:" >> $GITHUB_STEP_SUMMARY
+          echo "- Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Screenshots" >> $GITHUB_STEP_SUMMARY
+          echo "- HTML Reports" >> $GITHUB_STEP_SUMMARY
+
+# ============================================
+# NOTES FOR BEGINNERS
+# ============================================
+# 1. SECRETS.GITHUB_TOKEN is automatically provided by GitHub
+# 2. Artifacts are downloadable from GitHub Actions UI
+# 3. You can view logs for each step in GitHub Actions tab
+# 4. Matrix strategy runs jobs in parallel (faster execution)
+# 5. 'if: always()' ensures steps run even when tests fail
+# 6. Cache speeds up subsequent runs by storing npm packages
+# 7. Node.js 20.x is required for Cucumber.js 12.3.0+
+# 8. Essential fonts for Ubuntu 24.04: liberation, dejavu, fontconfig
+# 9. --with-deps installs browsers AND system dependencies

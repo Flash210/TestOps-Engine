@@ -19,6 +19,14 @@ on:
   workflow_dispatch:
 
 # ============================================
+# PERMISSIONS
+# ============================================
+# Permissions for nightly regression tests
+permissions:
+  contents: read        # Read repository contents
+  issues: write         # Create issues for failures (optional)
+
+# ============================================
 # JOBS
 # ============================================
 jobs:

@@ -34,6 +34,17 @@ on:
         default: ''
 
 # ============================================
+# PERMISSIONS
+# ============================================
+# Required for the workflow to comment on PRs and deploy to GitHub Pages
+permissions:
+  contents: write        # Allows pushing to gh-pages branch
+  issues: write          # Allows commenting on Pull Requests
+  pull-requests: write   # Allows commenting on Pull Requests
+  pages: write           # Allows deployment to GitHub Pages
+  id-token: write        # Required for GitHub Pages deployment
+
+# ============================================
 # JOBS
 # ============================================
 # Jobs are the main work units - you can have multiple jobs running in parallel

@@ -17,6 +17,14 @@ on:
   workflow_dispatch:
 
 # ============================================
+# PERMISSIONS
+# ============================================
+# Minimal permissions for smoke tests
+permissions:
+  contents: read        # Read repository contents
+  pull-requests: read   # Read PR information
+
+# ============================================
 # JOBS
 # ============================================
 jobs:

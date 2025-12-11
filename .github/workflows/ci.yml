@@ -76,33 +76,57 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'  # Cache npm dependencies for faster builds
       
-      # STEP 3: Install dependencies
+      # STEP 3: Install system dependencies and fonts
+      # This is CRITICAL for Playwright screenshots to work properly
+      - name: 🔧 Install System Dependencies & Fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            fonts-liberation \
+            fonts-noto-color-emoji \
+            fonts-noto-cjk \
+            fonts-freefont-ttf \
+            fonts-ipafont-gothic \
+            fonts-wqy-zenhei \
+            fonts-tlwg-loma-otf \
+            ttf-ubuntu-font-family \
+            libfontconfig1 \
+            libfreetype6 \
+            xfonts-cyrillic \
+            xfonts-scalable \
+            fonts-dejavu-core \
+            fonts-dejavu-extra
+          # Refresh font cache
+          sudo fc-cache -f -v
+        # Only run on Linux
+        if: runner.os == 'Linux'
+      
+      # STEP 4: Install dependencies
       # Installs all packages from package.json
       - name: 📦 Install Dependencies
         run: npm ci  # 'npm ci' is faster and more reliable than 'npm install' for CI
       
-      # STEP 4: Install Playwright browsers
+      # STEP 5: Install Playwright browsers
       # Playwright needs browser binaries (Chrome, Firefox, etc.)
       - name: 🎭 Install Playwright Browsers
         run: npx playwright install --with-deps chromium
         # --with-deps installs system dependencies needed by browsers
-        # We only install chromium to save time; add firefox, webkit if needed
       
-      # STEP 5: Run tests
+      # STEP 6: Run tests
       # Execute your test suite
       - name: 🧪 Run E2E Tests
         run: npm test
         # This runs your test script from package.json
         continue-on-error: true  # Continue even if tests fail (to generate reports)
       
-      # STEP 6: Run failed tests (optional rerun)
+      # STEP 7: Run failed tests (optional rerun)
       # Retry failed tests to reduce flakiness
       - name: 🔄 Rerun Failed Tests
         if: failure()  # Only runs if previous step failed
         run: npm run test:failed
         continue-on-error: true
       
-      # STEP 7: Upload Test Results as Artifacts
+      # STEP 8: Upload Test Results as Artifacts
       # Save test reports so you can download them later
       - name: 📊 Upload Test Results
         if: always()  # Always run this step, even if tests fail
@@ -112,7 +136,7 @@ jobs:
           path: test-results/
           retention-days: 30  # Keep artifacts for 30 days
       
-      # STEP 8: Upload Screenshots on Failure
+      # STEP 9: Upload Screenshots on Failure
       # Save failure screenshots for debugging
       - name: 📸 Upload Screenshots
         if: always()
@@ -122,7 +146,7 @@ jobs:
           path: test-results/screenshots/
           retention-days: 30
       
-      # STEP 9: Publish Test Report to GitHub Pages (Optional)
+      # STEP 10: Publish Test Report to GitHub Pages (Optional)
       # Makes reports viewable as a website
       - name: 📄 Deploy Report to GitHub Pages
         if: always() && github.ref == 'refs/heads/main'  # Only on main branch
@@ -132,7 +156,7 @@ jobs:
           publish_dir: ./test-results
           destination_dir: reports/${{ github.run_number }}
       
-      # STEP 10: Comment PR with Test Results (Optional)
+      # STEP 11: Comment PR with Test Results (Optional)
       # Add test summary as a comment on Pull Requests
       - name: 💬 Comment Test Results on PR
         if: github.event_name == 'pull_request'
@@ -198,3 +222,5 @@ jobs:
 # 5. 'if: always()' ensures steps run even when tests fail
 # 6. Cache speeds up subsequent runs by storing npm packages
 # 7. Node.js 20.x is required for Cucumber.js 12.3.0+
+# 8. System fonts are required for Playwright screenshots
+# 9. --with-deps installs browsers AND system dependencies

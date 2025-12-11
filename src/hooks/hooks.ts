@@ -20,12 +20,17 @@ After(async function ({ pickle, result }) {
     const img = await pageFixture.page.screenshot({
       path: `./test-results/screenshots/failed/${pickle.name}`,
       type: "png",
+      timeout: 30000,
+      omitBackground: true,
     });
     await this.attach(img, "image/png");
   }
   const img = await pageFixture.page.screenshot({
     path: `./test-results/screenshots/success/${pickle.name}`,
     type: "png",
+    timeout: 30000,
+
+    omitBackground: true,
   });
   await this.attach(img, "image/png");
   await pageFixture.page.close();

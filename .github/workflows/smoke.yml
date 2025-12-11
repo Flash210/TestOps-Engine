@@ -37,6 +37,27 @@ jobs:
           node-version: '20.x'  # Cucumber requires Node.js 20, 22, or 24+
           cache: 'npm'
       
+      # Install system fonts for Playwright screenshots
+      - name: 🔧 Install System Dependencies & Fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            fonts-liberation \
+            fonts-noto-color-emoji \
+            fonts-noto-cjk \
+            fonts-freefont-ttf \
+            fonts-ipafont-gothic \
+            fonts-wqy-zenhei \
+            fonts-tlwg-loma-otf \
+            ttf-ubuntu-font-family \
+            libfontconfig1 \
+            libfreetype6 \
+            xfonts-cyrillic \
+            xfonts-scalable \
+            fonts-dejavu-core \
+            fonts-dejavu-extra
+          sudo fc-cache -f -v
+      
       - name: 📦 Install Dependencies
         run: npm ci
       
@@ -64,4 +85,6 @@ jobs:
 # - Runs on all branches/commits
 # - Prevents broken code from merging
 # 
-# IMPORTANT: Node.js 20+ required for Cucumber.js
+# IMPORTANT: 
+# - Node.js 20+ required for Cucumber.js
+# - System fonts required for screenshots

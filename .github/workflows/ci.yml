@@ -77,25 +77,18 @@ jobs:
           cache: 'npm'  # Cache npm dependencies for faster builds
       
       # STEP 3: Install system dependencies and fonts
-      # This is CRITICAL for Playwright screenshots to work properly
+      # Essential fonts for Playwright screenshots on Ubuntu 24.04
       - name: 🔧 Install System Dependencies & Fonts
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             fonts-liberation \
-            fonts-noto-color-emoji \
-            fonts-noto-cjk \
-            fonts-freefont-ttf \
-            fonts-ipafont-gothic \
-            fonts-wqy-zenhei \
-            fonts-tlwg-loma-otf \
-            ttf-ubuntu-font-family \
-            libfontconfig1 \
-            libfreetype6 \
-            xfonts-cyrillic \
-            xfonts-scalable \
             fonts-dejavu-core \
-            fonts-dejavu-extra
+            fonts-dejavu-extra \
+            fonts-noto-color-emoji \
+            fontconfig \
+            libfontconfig1 \
+            libfreetype6
           # Refresh font cache
           sudo fc-cache -f -v
         # Only run on Linux
@@ -222,5 +215,5 @@ jobs:
 # 5. 'if: always()' ensures steps run even when tests fail
 # 6. Cache speeds up subsequent runs by storing npm packages
 # 7. Node.js 20.x is required for Cucumber.js 12.3.0+
-# 8. System fonts are required for Playwright screenshots
+# 8. Essential fonts for Ubuntu 24.04: liberation, dejavu, fontconfig
 # 9. --with-deps installs browsers AND system dependencies

@@ -49,7 +49,6 @@ jobs:
             fonts-ipafont-gothic \
             fonts-wqy-zenhei \
             fonts-tlwg-loma-otf \
-            ttf-ubuntu-font-family \
             libfontconfig1 \
             libfreetype6 \
             xfonts-cyrillic \

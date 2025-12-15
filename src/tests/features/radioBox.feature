@@ -14,6 +14,7 @@ Feature: DemoQA Elements - Radio Button Functionality
     Then the "Yes" radio button should be selected
     And the output text should be "You have selected Yes"
 
+
   Scenario: Select Impressive radio button
     When I click on "Impressive" radio button
     Then the "Impressive" radio button should be selected
@@ -25,23 +26,10 @@ Feature: DemoQA Elements - Radio Button Functionality
     Then no selection should change
     And the output should not change
 
-@skip
-  Scenario: Keyboard selection of Yes
-    Given focus is on the radio button group
-    When I navigate to "Yes" using keyboard
-    And I press Space on the focused option
-    Then the "Yes" radio button should be selected
-    And the output text should be "You have selected Yes"
-@skip
-  Scenario: Keyboard selection of Impressive
-    Given focus is on the radio button group
-    When I navigate to "Impressive" using keyboard
-    And I press Enter on the focused option
-    Then the "Impressive" radio button should be selected
-    And the output text should be "You have selected Impressive"
-@skip
+  
   Scenario: State resets on page refresh
-    When I select "Yes" radio button
+    When I click on "Yes" radio button
+    Then the "Yes" radio button should be selected
     And I refresh the page
     Then no radio button should be selected
     And the "No" radio button should be disabled

@@ -1,12 +1,12 @@
 import { After, AfterAll, Before, BeforeAll, Status } from "@cucumber/cucumber";
-import { chromium, Browser, BrowserContext } from "playwright";
+import { chromium, Browser, BrowserContext, Page } from "playwright";
 import { pageFixture } from "./pageFixture";
 
 let browser: Browser;
 let context: BrowserContext;
 
 // Helper function to wait for fonts to load
-async function waitForFontsToLoad(page: any) {
+async function waitForFontsToLoad(page: Page): Promise<void> {
   try {
     await page.evaluate(() => {
       return document.fonts.ready;
@@ -22,40 +22,62 @@ BeforeAll(async function () {
 });
 
 Before(async function () {
-  context = await browser.newContext();
-  const page = await browser.newPage();
+  context = await browser.newContext({
+    viewport: { width: 1920, height: 1080 },
+    ignoreHTTPSErrors: true,
+  });
+
+  const page = await context.newPage();
+
+  // Set default navigation timeout
+  page.setDefaultNavigationTimeout(30000);
+  page.setDefaultTimeout(10000);
+
   pageFixture.page = page;
 });
 
 After(async function ({ pickle, result }) {
+  const screenshotDir = result?.status === Status.FAILED 
+    ? './test-results/screenshots/failed' 
+    : './test-results/screenshots/success';
+
   try {
     // Wait for fonts to load before taking screenshot
     await waitForFontsToLoad(pageFixture.page);
-    
-    if (result?.status === Status.FAILED) {
-      const img = await pageFixture.page.screenshot({
-        path: `./test-results/screenshots/failed/${pickle.name}.png`,
-        type: "png",
-        timeout: 60000, // Increased timeout to 60 seconds
-      });
-      await this.attach(img, "image/png");
-    } else {
-      const img = await pageFixture.page.screenshot({
-        path: `./test-results/screenshots/success/${pickle.name}.png`,
-        type: "png",
-        timeout: 60000, // Increased timeout to 60 seconds
-      });
-      await this.attach(img, "image/png");
-    }
+
+    // Sanitize scenario name for file path
+    const sanitizedName = pickle.name.replace(/[^a-z0-9]/gi, '_').substring(0, 100);
+
+    const img = await pageFixture.page.screenshot({
+      path: `${screenshotDir}/${sanitizedName}.png`,
+      type: "png",
+      timeout: 60000,
+      fullPage: true, // Capture full page for better debugging
+    });
+
+    await this.attach(img, "image/png");
   } catch (error) {
-    console.log(`Screenshot failed: ${error}`);
-    // Continue even if screenshot fails
+    console.error(`Screenshot failed for "${pickle.name}":`, error instanceof Error ? error.message : error);
+    // Continue even if screenshot fails - don't block test execution
   }
-  
-  await pageFixture.page.close();
-  await context.close();
+
+  try {
+    await pageFixture.page.close();
+  } catch (error) {
+    console.error('Error closing page:', error instanceof Error ? error.message : error);
+  }
+
+  try {
+    await context.close();
+  } catch (error) {
+    console.error('Error closing context:', error instanceof Error ? error.message : error);
+  }
 });
 
 AfterAll(async function () {
-  await browser.close();
+  try {
+    await browser.close();
+  } catch (error) {
+    console.error('Error closing browser:', error instanceof Error ? error.message : error);
+  }
 });

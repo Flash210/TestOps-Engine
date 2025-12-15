@@ -1,7 +1,7 @@
 import { Given, When, Then, setDefaultTimeout, DataTable } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { pageFixture } from '../../hooks/pageFixture';
-import { TextBoxPage } from '../../pages/textBox.page';
+import { TextBoxPage, TextBoxFormData } from '../../pages/textBox.page';
 
 setDefaultTimeout(60 * 1000); // 60 seconds
 
@@ -24,13 +24,16 @@ When('I fill in the form with the following details:', async (dataTable: DataTab
   // Arrange
   const data = dataTable.rowsHash();
   
+  // Validate required fields
+  const formData: TextBoxFormData = {
+    fullName: data['Full Name'] || '',
+    email: data['Email'] || '',
+    currentAddress: data['Current Address'] || '',
+    permanentAddress: data['Permanent Address'] || ''
+  };
+  
   // Act
-  await textBoxPage.fillCompleteForm({
-    fullName: data['Full Name'],
-    email: data['Email'],
-    currentAddress: data['Current Address'],
-    permanentAddress: data['Permanent Address']
-  });
+  await textBoxPage.fillCompleteForm(formData);
 });
 
 When('I enter {string} in the Full Name field', async (fullName: string) => {
@@ -67,8 +70,10 @@ When('I click the Submit button', async () => {
   // Act
   await textBoxPage.clickSubmit();
   
-  // Wait for potential output to appear
-  await pageFixture.page.waitForTimeout(500);
+  // Wait for potential output or network idle
+  await pageFixture.page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {
+    // Ignore timeout - some forms don't trigger network requests
+  });
 });
 
 When('I clear the Full Name field', async () => {
@@ -108,8 +113,8 @@ Then('the email field should show validation error', async () => {
   const className = await emailField.getAttribute('class');
   
   // Assert
-  // DemoQA adds 'field-error' or 'mr-sm-2 field-error form-control' class for invalid emails
-  expect(className).toContain('field-error');
+  expect(className, 'Email field should have error class').not.toBeNull();
+  expect(className, 'Email field should contain "field-error" class').toContain('field-error');
 });
 
 Then('the Text Box form should be visible', async () => {

@@ -33,68 +33,70 @@ export class TextBoxPage {
   }
 
   // Navigation Methods
-  async navigateToDemoQA() {
+  async navigateToDemoQA(): Promise<void> {
     await this.page.goto('https://demoqa.com/', { waitUntil: 'domcontentloaded' });
   }
 
-  async clickElementsCard() {
+  async clickElementsCard(): Promise<void> {
     await this.page.locator(this.selectors.elementsCard).click();
   }
 
-  async clickTextBoxMenuItem() {
+  async clickTextBoxMenuItem(): Promise<void> {
     await this.page.locator(this.selectors.textBoxMenuItem).click();
   }
 
-  async navigateToTextBoxPage() {
+  async navigateToTextBoxPage(): Promise<void> {
     await this.navigateToDemoQA();
     await this.clickElementsCard();
     await this.clickTextBoxMenuItem();
   }
 
   // Form Interaction Methods
-  async fillFullName(fullName: string) {
-    await this.page.locator(this.selectors.fullNameInput).clear();
-    await this.page.locator(this.selectors.fullNameInput).fill(fullName);
+  async fillFullName(fullName: string): Promise<void> {
+    const input = this.page.locator(this.selectors.fullNameInput);
+    await input.clear();
+    if (fullName) {
+      await input.fill(fullName);
+    }
   }
 
-  async fillEmail(email: string) {
-    await this.page.locator(this.selectors.emailInput).clear();
-    await this.page.locator(this.selectors.emailInput).fill(email);
+  async fillEmail(email: string): Promise<void> {
+    const input = this.page.locator(this.selectors.emailInput);
+    await input.clear();
+    if (email) {
+      await input.fill(email);
+    }
   }
 
-  async fillCurrentAddress(address: string) {
-    await this.page.locator(this.selectors.currentAddressTextarea).clear();
-    await this.page.locator(this.selectors.currentAddressTextarea).fill(address);
+  async fillCurrentAddress(address: string): Promise<void> {
+    const input = this.page.locator(this.selectors.currentAddressTextarea);
+    await input.clear();
+    if (address) {
+      await input.fill(address);
+    }
   }
 
-  async fillPermanentAddress(address: string) {
-    await this.page.locator(this.selectors.permanentAddressTextarea).clear();
-    await this.page.locator(this.selectors.permanentAddressTextarea).fill(address);
+  async fillPermanentAddress(address: string): Promise<void> {
+    const input = this.page.locator(this.selectors.permanentAddressTextarea);
+    await input.clear();
+    if (address) {
+      await input.fill(address);
+    }
   }
 
-  async clickSubmit() {
+  async clickSubmit(): Promise<void> {
     await this.page.locator(this.selectors.submitButton).click();
   }
 
   // Complex Actions (DRY principle)
-  async fillCompleteForm(data: {
-    fullName: string;
-    email: string;
-    currentAddress: string;
-    permanentAddress: string;
-  }) {
+  async fillCompleteForm(data: TextBoxFormData): Promise<void> {
     await this.fillFullName(data.fullName);
     await this.fillEmail(data.email);
     await this.fillCurrentAddress(data.currentAddress);
     await this.fillPermanentAddress(data.permanentAddress);
   }
 
-  async submitForm(data: {
-    fullName: string;
-    email: string;
-    currentAddress: string;
-    permanentAddress: string;
-  }) {
+  async submitForm(data: TextBoxFormData): Promise<void> {
     await this.fillCompleteForm(data);
     await this.clickSubmit();
   }
@@ -120,7 +122,7 @@ export class TextBoxPage {
     return await this.page.locator(this.selectors.outputPermanentAddress).textContent() || '';
   }
 
-  async verifyOutputContains(field: string, expectedValue: string) {
+  async verifyOutputContains(field: string, expectedValue: string): Promise<void> {
     let actualValue = '';
     
     switch(field.toLowerCase()) {
@@ -172,7 +174,7 @@ export class TextBoxPage {
     return value === '';
   }
 
-  async clearAllFields() {
+  async clearAllFields(): Promise<void> {
     await this.page.locator(this.selectors.fullNameInput).clear();
     await this.page.locator(this.selectors.emailInput).clear();
     await this.page.locator(this.selectors.currentAddressTextarea).clear();
@@ -188,4 +190,12 @@ export class TextBoxPage {
     }
     return 'valid';
   }
+}
+
+// Interface for type safety
+export interface TextBoxFormData {
+  fullName: string;
+  email: string;
+  currentAddress: string;
+  permanentAddress: string;
 }

@@ -1,3 +1,4 @@
+@textBox
 Feature: DemoQA Elements - Text Box Functionality
   As a QA Engineer
   I want to test the Text Box form on DemoQA

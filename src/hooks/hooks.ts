@@ -1,6 +1,7 @@
 import { After, AfterAll, Before, BeforeAll, Status } from "@cucumber/cucumber";
 import { chromium, Browser, BrowserContext, Page } from "playwright";
 import { pageFixture } from "./pageFixture";
+import { config } from "../config/config";
 
 let browser: Browser;
 let context: BrowserContext;
@@ -23,30 +24,33 @@ BeforeAll(async function () {
 
 Before(async function () {
   context = await browser.newContext({
-    viewport: { width: 1920, height: 1080 },
+    viewport: config.viewport,
     ignoreHTTPSErrors: true,
   });
 
   const page = await context.newPage();
 
   // Set default navigation timeout
-  page.setDefaultNavigationTimeout(30000);
-  page.setDefaultTimeout(10000);
+  page.setDefaultNavigationTimeout(config.timeout.navigation);
+  page.setDefaultTimeout(config.timeout.default);
 
   pageFixture.page = page;
 });
 
 After(async function ({ pickle, result }) {
-  const screenshotDir = result?.status === Status.FAILED 
-    ? './test-results/screenshots/failed' 
-    : './test-results/screenshots/success';
+  const screenshotDir =
+    result?.status === Status.FAILED
+      ? "./test-results/screenshots/failed"
+      : "./test-results/screenshots/success";
 
   try {
     // Wait for fonts to load before taking screenshot
     await waitForFontsToLoad(pageFixture.page);
 
     // Sanitize scenario name for file path
-    const sanitizedName = pickle.name.replace(/[^a-z0-9]/gi, '_').substring(0, 100);
+    const sanitizedName = pickle.name
+      .replace(/[^a-z0-9]/gi, "_")
+      .substring(0, 100);
 
     const img = await pageFixture.page.screenshot({
       path: `${screenshotDir}/${sanitizedName}.png`,
@@ -57,20 +61,29 @@ After(async function ({ pickle, result }) {
 
     await this.attach(img, "image/png");
   } catch (error) {
-    console.error(`Screenshot failed for "${pickle.name}":`, error instanceof Error ? error.message : error);
+    console.error(
+      `Screenshot failed for "${pickle.name}":`,
+      error instanceof Error ? error.message : error
+    );
     // Continue even if screenshot fails - don't block test execution
   }
 
   try {
     await pageFixture.page.close();
   } catch (error) {
-    console.error('Error closing page:', error instanceof Error ? error.message : error);
+    console.error(
+      "Error closing page:",
+      error instanceof Error ? error.message : error
+    );
   }
 
   try {
     await context.close();
   } catch (error) {
-    console.error('Error closing context:', error instanceof Error ? error.message : error);
+    console.error(
+      "Error closing context:",
+      error instanceof Error ? error.message : error
+    );
   }
 });
 
@@ -78,6 +91,9 @@ AfterAll(async function () {
   try {
     await browser.close();
   } catch (error) {
-    console.error('Error closing browser:', error instanceof Error ? error.message : error);
+    console.error(
+      "Error closing browser:",
+      error instanceof Error ? error.message : error
+    );
   }
 });

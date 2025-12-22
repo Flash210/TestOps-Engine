@@ -19,10 +19,16 @@ export class WebTablePage {
     // Navigation
     elementsCard: 'div.card:has-text("Elements")',
     webTablesMenuItem: 'span:has-text("Web Tables")',
+
     // Table Elements
     addButton: "#addNewRecordButton",
+    searchBox: "#searchBox",
+    tableBody: ".rt-tbody",
+    tableRows: ".rt-tr-group",
+    tableCell: ".rt-td",
+    table: ".rt-table",
 
-    //resgistration form
+    // Registration Form
     firstNameInput: "#firstName",
     lastNameInput: "#lastName",
     emailInput: "#userEmail",
@@ -30,7 +36,11 @@ export class WebTablePage {
     salaryInput: "#salary",
     departmentInput: "#department",
     submitButton: "#submit",
-    tableRows: ".rt-tr-group",
+    closeButton: ".close",
+
+    // Action Buttons
+    editButton: '[title="Edit"]',
+    deleteButton: '[title="Delete"]',
   };
 
   constructor(page: Page) {
@@ -99,5 +109,176 @@ export class WebTablePage {
     }
 
     return false;
+  }
+
+  async getAllTableRecords(): Promise<WebTableFormData[]> {
+    const rows = this.page.locator(this.selectors.tableRows);
+    const rowCount = await rows.count();
+    const records: WebTableFormData[] = [];
+
+    for (let i = 0; i < rowCount; i++) {
+      const row = rows.nth(i);
+      const cells = row.locator(this.selectors.tableCell);
+
+      // Skip empty rows (if any)
+      const firstCellText = await cells.nth(0).innerText();
+      if (!firstCellText.trim()) continue;
+
+      // Column order in the table: First Name, Last Name, Age, Email, Salary, Department, Action
+      const record: WebTableFormData = {
+        firstName: (await cells.nth(0).innerText()).trim(),
+        lastName: (await cells.nth(1).innerText()).trim(),
+        age: (await cells.nth(2).innerText()).trim(),
+        email: (await cells.nth(3).innerText()).trim(),
+        salary: (await cells.nth(4).innerText()).trim(),
+        department: (await cells.nth(5).innerText()).trim(),
+      };
+
+      records.push(record);
+    }
+
+    return records;
+  }
+
+  // Column mapping for table verification
+  private readonly columnMapping: Record<string, number> = {
+    "First Name": 1,
+    "Last Name": 2,
+    "Age": 3,
+    "Email": 4,
+    "Salary": 5,
+    "Department": 6,
+  };
+
+  /**
+   * Search for text in the search box
+   */
+  async searchFor(text: string): Promise<void> {
+    const searchBox = this.page.locator(this.selectors.searchBox);
+    await searchBox.fill("");
+    await searchBox.fill(text);
+  }
+
+  /**
+   * Find a table row containing the specified text
+   */
+  findRowByText(text: string) {
+    return this.page.locator(`${this.selectors.tableBody} ${this.selectors.tableRows}`, {
+      hasText: text,
+    });
+  }
+
+  /**
+   * Click the edit button for a specific row
+   */
+  async clickEditForRow(name: string): Promise<void> {
+    const row = this.findRowByText(name);
+    await row.locator(this.selectors.editButton).click();
+  }
+
+  /**
+   * Click the delete button for a specific row
+   */
+  async clickDeleteForRow(name: string): Promise<void> {
+    const row = this.findRowByText(name);
+    await row.locator(this.selectors.deleteButton).click();
+  }
+
+  /**
+   * Update a specific field in the registration form
+   */
+  async updateField(fieldSelector: string, value: string): Promise<void> {
+    const input = this.page.locator(fieldSelector);
+    await input.fill("");
+    await input.fill(value);
+  }
+
+  /**
+   * Update multiple fields in the registration form
+   */
+  async updateFields(fields: Partial<Record<keyof WebTableFormData, string>>): Promise<void> {
+    if (fields.firstName) await this.updateField(this.selectors.firstNameInput, fields.firstName);
+    if (fields.lastName) await this.updateField(this.selectors.lastNameInput, fields.lastName);
+    if (fields.email) await this.updateField(this.selectors.emailInput, fields.email);
+    if (fields.age) await this.updateField(this.selectors.ageInput, fields.age);
+    if (fields.salary) await this.updateField(this.selectors.salaryInput, fields.salary);
+    if (fields.department) await this.updateField(this.selectors.departmentInput, fields.department);
+  }
+
+  /**
+   * Get the value of a specific cell in a row
+   */
+  async getCellValue(rowText: string, columnName: string): Promise<string> {
+    const columnIndex = this.columnMapping[columnName];
+    if (!columnIndex) {
+      throw new Error(`Column mapping not found for: ${columnName}`);
+    }
+
+    const row = this.findRowByText(rowText);
+    const cell = row.locator(`${this.selectors.tableCell}:nth-child(${columnIndex})`);
+    return await cell.innerText();
+  }
+
+  /**
+   * Verify that a cell has the expected value
+   */
+  async verifyCellValue(rowText: string, columnName: string, expectedValue: string): Promise<void> {
+    const columnIndex = this.columnMapping[columnName];
+    if (!columnIndex) {
+      throw new Error(`Column mapping not found for: ${columnName}`);
+    }
+
+    const row = this.findRowByText(rowText);
+    const cell = row.locator(`${this.selectors.tableCell}:nth-child(${columnIndex})`);
+
+    const { expect } = await import("@playwright/test");
+    await expect(cell).toHaveText(expectedValue);
+  }
+
+  /**
+   * Verify multiple cell values in a row
+   */
+  async verifyCellValues(rowText: string, expectedValues: Record<string, string>): Promise<void> {
+    const { expect } = await import("@playwright/test");
+    const row = this.findRowByText(rowText);
+    await expect(row).toBeVisible();
+
+    for (const [field, value] of Object.entries(expectedValues)) {
+      const columnIndex = this.columnMapping[field];
+      if (!columnIndex) {
+        throw new Error(`Column mapping not found for field: ${field}`);
+      }
+
+      const cell = row.locator(`${this.selectors.tableCell}:nth-child(${columnIndex})`);
+      await expect(cell).toHaveText(value);
+    }
+  }
+
+  /**
+   * Verify that a record does not exist in the table
+   */
+  async verifyRecordNotExists(text: string): Promise<void> {
+    const { expect } = await import("@playwright/test");
+    const row = this.findRowByText(text);
+    await expect(row).toHaveCount(0);
+  }
+
+  /**
+   * Get the column index by column name
+   */
+  getColumnIndex(columnName: string): number {
+    const index = this.columnMapping[columnName];
+    if (!index) {
+      throw new Error(`Column mapping not found for: ${columnName}`);
+    }
+    return index;
+  }
+
+  /**
+   * Verify the table is visible
+   */
+  async verifyTableVisible(): Promise<void> {
+    const { expect } = await import("@playwright/test");
+    await expect(this.page.locator(this.selectors.table)).toBeVisible();
   }
 }

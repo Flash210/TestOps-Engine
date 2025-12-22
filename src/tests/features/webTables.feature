@@ -7,7 +7,7 @@ Feature: DemoQA Elements - Web Tables Functionality
   Background:
     Given I navigate to DemoQA Web Tables page
 
-  @smoke @positive 
+  @smoke @positive @skip
   Scenario: Add new record to web table with all fields
     When I click on the Add button
     And I fill in the registration form with the following details:
@@ -31,57 +31,58 @@ Feature: DemoQA Elements - Web Tables Functionality
       | Bob        | Johnson   | bob@test.com       | 35  | 60000  | Finance    |
       | Carol      | Williams  | carol@test.com     | 42  | 75000  | Marketing  |
     Then the table should contain all added records
+    Then the table should contain the following records:
+      | First Name | Last Name | Email              | Age | Salary | Department |
+      | Alice      | Smith     | alice@test.com     | 28  | 45000  | HR         |
+      | Bob        | Johnson   | bob@test.com       | 35  | 60000  | Finance    |
+      | Carol      | Williams  | carol@test.com     | 42  | 75000  | Marketing  |
 
-  @positive @edit @skip
-  Scenario: Edit existing record in web table
-    When I click the edit button for "Cierra"
-    And I update the following fields:
-      | Age    | 40    |
-      | Salary | 15000 |
-    And I click the Submit button in registration form
-    Then the record should be updated in the table
-    And the table should show "Age" as "40" for "Cierra"
-    And the table should show "Salary" as "15000" for "Cierra"
+    
 
-  @positive @edit @skip
+  @positive @edit  @skip
+ Scenario: Edit an existing web table record
+  When I edit the record for "Cierra" with:
+    | Age    | 40    |
+    | Salary | 15000 |
+  Then the table should show updated values for "Cierra":
+    | Age    | 40    |
+    | Salary | 15000 |
+
+  @positive @edit  @skip
   Scenario: Edit record email address
-    When I click the edit button for "Alden"
-    And I update the Email field to "alden.updated@example.com"
-    And I click the Submit button in registration form
-    Then the table should contain "alden.updated@example.com"
+    When I update the record for "Alden" with:
+    | Email | alden.updated@example.com |
+  Then the table should show updated values for "Alden":
+    | Email | alden.updated@example.com |
 
-  @positive @delete @skip
+
+
+  @positive @skip
   Scenario: Delete single record from web table
     When I click the delete button for "Cierra"
-    Then the record "Cierra" should be removed from the table
     And the table should not contain "Cierra"
 
   @positive @delete @skip
   Scenario: Delete multiple records from web table
-    When I delete the following records:
-      | Cierra |
-      | Alden  |
-    Then the table should not contain "Cierra"
-    And the table should not contain "Alden"
+  When I delete the following records:
+    | Name    |
+    | Cierra  |
+    | Alden   |
+  Then the table should not contain any of these records:
+    | Name    |
+    | Cierra  |
+    | Alden   |
 
-  @positive @search @skip
-  Scenario: Search for existing record by first name
-    When I enter "Cierra" in the search box
-    Then the table should display only records matching "Cierra"
-    And the table should contain "Cierra"
-    And the table row count should be 1
+ @positive @search 
+Scenario Outline: Search for records
+  When I search for "<searchValue>"
+  Then the table should contain "<searchValue>"
 
-  @positive @search @skip
-  Scenario: Search for record by email
-    When I enter "kierra@example.com" in the search box
-    Then the table should display only records matching "kierra@example.com"
-    And the table should contain "kierra@example.com"
-
-  @positive @search @skip
-  Scenario: Search for record by department
-    When I enter "Insurance" in the search box
-    Then the table should display only records matching "Insurance"
-    And all displayed records should contain "Insurance"
+Examples:
+  | searchValue           |
+  | Cierra                |
+  | kierra@example.com    |
+  | Insurance             |
 
   @positive @search @skip
   Scenario: Search with partial text

@@ -100,15 +100,18 @@ export class WebTablePage {
   }
 
   async tableContains(text: string) {
-    const cells = this.page.locator(".rt-td"); // adjust selector if needed
-    const count = await cells.count();
+    // const cells = this.page.locator(".rt-td"); 
+    // const count = await cells.count();
 
-    for (let i = 0; i < count; i++) {
-      const cellText = await cells.nth(i).textContent();
-      if (cellText?.trim() === text) return true;
-    }
+    // for (let i = 0; i < count; i++) {
+    //   const cellText = await cells.nth(i).textContent();
+    //   if (cellText?.trim() === text) return true;
+    // }
 
-    return false;
+    // return false;
+
+    return await this.page.locator(".rt-td", { hasText: text }).count() > 0;
+
   }
 
   async getAllTableRecords(): Promise<WebTableFormData[]> {

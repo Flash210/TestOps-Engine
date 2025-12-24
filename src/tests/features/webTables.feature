@@ -9,7 +9,7 @@ Feature: DemoQA Elements - Web Tables Functionality
 
   @smoke @positive @skip
   Scenario: Add new record to web table with all fields
-    When I click on the Add button
+    When I click on the "Add" button
     And I fill in the registration form with the following details:
       | First Name   | John         |
       | Last Name    | Doe          |
@@ -84,39 +84,36 @@ Examples:
   | kierra@example.com    |
   | Insurance             |
 
-  @positive @search @skip
-  Scenario: Search with partial text
-    When I enter "err" in the search box
-    Then the table should display records containing "err"
-
-  @negative @search 
+  @negative @search @skip
   Scenario: Search for non-existent record
     When I search for "NonExistentName"
     Then the table should display "No rows found" 
 
-@skip
-@functional @search
+
+@functional @search @skip
 Scenario Outline: Search and clear filter
-  When I enter "<keyword>" in the search box
-  Then the table should display only records matching "<keyword>"
-  When I clear the search box
-  Then the table should display all records
+When I search for "<keyword>"
+Then the search results should match "<keyword>"
+When I clear the search box
+Then the table should be reset
 
 Examples:
   | keyword |
   | Cierra  |
   | Alden   |
-@skip
+
 @pagination
 Scenario Outline: Change page size
   When I select "<rows>" rows from the page size dropdown
-  Then the table should display maximum <rows> rows per page
+  Then the table should display max "<rows>" rows per page
 
 Examples:
   | rows |
   | 5    |
   | 10   |
   | 20   |
+
+
 @skip
 @pagination
 Scenario Outline: Navigate between pages
@@ -129,82 +126,16 @@ Examples:
   | records | rows | action   | page |
   | 15      | 10   | next     | 2    |
   | 15      | 10   | previous | 1    |
-@skip
-@validation @negative
-Scenario Outline: Submit form with invalid input
-  When I click on the Add button
-  And I fill in the registration form with the following details:
-    | First Name | <firstName> |
-    | Last Name  | <lastName>  |
-    | Email      | <email>     |
-    | Age        | <age>       |
-    | Salary     | <salary>    |
-    | Department | IT          |
-  And I click the Submit button in registration form
-  Then the "<field>" field should show validation error
+  
 
-Examples:
-  | firstName | lastName | email         | age | salary | field      |
-  |           | Doe      | test@test.com | 30  | 50000  | First Name |
-  | John      |           | test@test.com | 30  | 50000  | Last Name  |
-  | John      | Doe      | invalid-email | 30  | 50000  | Email      |
-  | John      | Doe      | test@test.com | -5  | 50000  | Age        |
-  | John      | Doe      | test@test.com | abc | 50000  | Age        |
-  | John      | Doe      | test@test.com | 30  | -1000  | Salary     |
-@skip
-@validation @negative
-Scenario Outline: Submit form with invalid email formats
-  When I click on the Add button
-  And I fill in the registration form with email "<invalidEmail>"
-  And I click the Submit button in registration form
-  Then the Email field should show validation error
 
-Examples:
-  | invalidEmail      |
-  | plaintext         |
-  | @example.com      |
-  | user@             |
-  | user @example.com |
-  | user@.com         |
-@skip
-@boundary
-Scenario Outline: Add record with boundary values
-  When I click on the Add button
-  And I fill in the registration form with the following details:
-    | First Name | <firstName> |
-    | Last Name  | <lastName>  |
-    | Email      | <email>     |
-    | Age        | <age>       |
-    | Salary     | <salary>    |
-    | Department | <dept>      |
-  And I click the Submit button in registration form
-  Then the new record should be added to the table
-
-Examples:
-  | firstName | lastName | email              | age | salary | dept       |
-  | Young     | Person   | young@test.com     | 18  | 25000  | Intern     |
-  | Senior    | Person   | senior@test.com    | 100 | 75000  | Consultant |
-  | Volunteer | Worker   | volunteer@test.com | 25  | 0      | Volunteer  |
-@skip
-@sorting
-Scenario Outline: Sort table by column
-  When I click on the "<column>" column header <times>
-  Then the table should be sorted by "<column>" in "<order>" order
-
-Examples:
-  | column     | times | order      |
-  | First Name | once  | ascending  |
-  | First Name | twice | descending |
-  | Age        | once  | ascending  |
-  | Salary     | once  | ascending  |
-@skip
 @functional
 Scenario: Cancel adding new record
-  When I click on the Add button
+  When I click on the "Add" button
   And I fill in the registration form with the following details:
     | First Name | Test   |
     | Last Name  | Cancel |
-  And I click the Close button
+  And I click on the "Close" button
   Then the registration form should be closed
   And the table should not contain "Test Cancel"
 @skip
@@ -212,7 +143,7 @@ Scenario: Cancel adding new record
 Scenario: Cancel editing existing record
   When I click the edit button for "Cierra"
   And I update the Age field to "99"
-  And I click the Close button
+  And I click the "Close" button
   Then the registration form should be closed
   And the table should not show "Age" as "99" for "Cierra"
 @skip

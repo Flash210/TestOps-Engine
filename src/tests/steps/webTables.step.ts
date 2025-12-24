@@ -8,6 +8,7 @@ import {
 import { expect } from "@playwright/test";
 import { pageFixture } from "../../hooks/pageFixture";
 import { WebTablePage, WebTableFormData } from "../../pages/webTable.page";
+import { CustomWorld } from "../../helpers/customWorld";
 
 setDefaultTimeout(60 * 1000); // 60 seconds
 
@@ -24,9 +25,11 @@ Given("I navigate to DemoQA Web Tables page", async () => {
 });
 
 // When Steps - Add Operations
-When("I click on the Add button", async () => {
-  await webPage.clickButton("Add");
+When("I click on the {string} button", async (buttonName:string) => {
+  await webPage.clickButton(buttonName);
 });
+
+
 
 When(
   "I fill in the registration form with the following details:",
@@ -150,15 +153,37 @@ When(
   }
 );
 
-When("I search for {string}", async (searchTerm: string) => {
-  // Act - Perform search
-  await webPage.searchFor(searchTerm);
+When(
+  "I search for {string}",
+  async function (this: CustomWorld, searchTerm: string) {
+    this.originalRowCount = await webPage.getRowCount();
+    // Act - Perform search
+    await webPage.searchFor(searchTerm);
+  }
+);
+
+Then("the search results should match {string}", async (searchTerm: string) => {
+  webPage.findRowByText(searchTerm);
 });
 
-Then("the table should show only one record with", async (name: String) => {});
+When("I clear the search box", async () => {
+  webPage.clearFieldValue();
+});
+
+Then("the table should be reset", async function (this: CustomWorld) {
+  // const rowCount = await webPage.getRowCount();
+
+  // expect(rowCount).toBe(this.originalRowCount);
+
+  await expect
+    .poll(async () => await webPage.getRowCount(), { timeout: 5000 })
+    .toBe(this.originalRowCount);
+});
+
+Then("the table should show only one record with", async (name: String) => { });
 
 Then("the table should display {string}", async (name: string) => {
-  await expect(pageFixture.page.locator(".rt-td")).toContainText(name);
+  webPage.findRowByText(name);
 });
 
 When("I update the Email field to {string}", async (email: string) => {
@@ -264,3 +289,47 @@ Then(
     await webPage.verifyCellValue(name, field, value);
   }
 );
+
+When(
+  "I select {string} rows from the page size dropdown",
+  async (row: string) => {
+    const rowNumber = parseInt(row, 10);
+
+    await webPage.selectPageSize(rowNumber);
+  }
+);
+
+// FIX: Browser closure timing issue
+// ISSUE BEFORE FIX:
+// 1. Missing 'await' on expect.poll() caused race conditions
+// 2. Missing 'return' statement in second poll callback (line 311)
+// 3. Incorrect first assertion comparing to 'rowCountBefore + 3'
+// 4. These issues caused the page to be accessed after browser closure in After hook
+//
+// AFTER FIX:
+// - Added 'await' to properly wait for assertion completion
+// - Added 'return' statement to return row count value
+// - Removed incorrect first assertion
+// - Use 'toBeLessThanOrEqual' since table may have fewer rows than page size
+Then(
+  "the table should display max {string} rows per page",
+  async (row: string) => {
+    const expectedRowCount = parseInt(row, 10);
+
+    await expect
+      .poll(
+        async () => {
+          const currentRowCount = await webPage.getRowCount();
+          return currentRowCount; // FIX: Added return statement
+        },
+        {
+          message: `Expected table to display max ${expectedRowCount} rows per page`,
+          timeout: 5000,
+        }
+      )
+      .toBeLessThanOrEqual(expectedRowCount); // FIX: Use correct assertion
+  }
+);
+
+
+

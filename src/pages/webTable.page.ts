@@ -24,7 +24,7 @@ export class WebTablePage {
     addButton: "#addNewRecordButton",
     searchBox: "#searchBox",
     tableBody: ".rt-tbody",
-    tableRows: ".rt-tr-group",
+    tableRows: ".rt-tr-group:visible",
     tableCell: ".rt-td",
     table: ".rt-table",
 
@@ -41,6 +41,7 @@ export class WebTablePage {
     // Action Buttons
     editButton: '[title="Edit"]',
     deleteButton: '[title="Delete"]',
+    rowsPerPageDropdown: "select[aria-label='rows per page']",
   };
 
   constructor(page: Page) {
@@ -63,9 +64,16 @@ export class WebTablePage {
         await this.page.locator(this.selectors.submitButton).click();
         break;
 
+        case "Close":
+          await this.page.locator(this.selectors.closeButton)
+
       default:
         throw new Error(`Button with name ${buttonName} not recognized.`);
     }
+  }
+
+  async clearFieldValue() {
+    await this.page.locator(this.selectors.searchBox).fill("");
   }
 
   async fillRegistrationForm(formData: WebTableFormData): Promise<void> {
@@ -100,7 +108,7 @@ export class WebTablePage {
   }
 
   async tableContains(text: string) {
-    // const cells = this.page.locator(".rt-td"); 
+    // const cells = this.page.locator(".rt-td");
     // const count = await cells.count();
 
     // for (let i = 0; i < count; i++) {
@@ -110,8 +118,7 @@ export class WebTablePage {
 
     // return false;
 
-    return await this.page.locator(".rt-td", { hasText: text }).count() > 0;
-
+    return (await this.page.locator(".rt-td", { hasText: text }).count()) > 0;
   }
 
   async getAllTableRecords(): Promise<WebTableFormData[]> {
@@ -147,10 +154,10 @@ export class WebTablePage {
   private readonly columnMapping: Record<string, number> = {
     "First Name": 1,
     "Last Name": 2,
-    "Age": 3,
-    "Email": 4,
-    "Salary": 5,
-    "Department": 6,
+    Age: 3,
+    Email: 4,
+    Salary: 5,
+    Department: 6,
   };
 
   /**
@@ -166,9 +173,12 @@ export class WebTablePage {
    * Find a table row containing the specified text
    */
   findRowByText(text: string) {
-    return this.page.locator(`${this.selectors.tableBody} ${this.selectors.tableRows}`, {
-      hasText: text,
-    });
+    return this.page.locator(
+      `${this.selectors.tableBody} ${this.selectors.tableRows}`,
+      {
+        hasText: text,
+      }
+    );
   }
 
   /**
@@ -199,13 +209,20 @@ export class WebTablePage {
   /**
    * Update multiple fields in the registration form
    */
-  async updateFields(fields: Partial<Record<keyof WebTableFormData, string>>): Promise<void> {
-    if (fields.firstName) await this.updateField(this.selectors.firstNameInput, fields.firstName);
-    if (fields.lastName) await this.updateField(this.selectors.lastNameInput, fields.lastName);
-    if (fields.email) await this.updateField(this.selectors.emailInput, fields.email);
+  async updateFields(
+    fields: Partial<Record<keyof WebTableFormData, string>>
+  ): Promise<void> {
+    if (fields.firstName)
+      await this.updateField(this.selectors.firstNameInput, fields.firstName);
+    if (fields.lastName)
+      await this.updateField(this.selectors.lastNameInput, fields.lastName);
+    if (fields.email)
+      await this.updateField(this.selectors.emailInput, fields.email);
     if (fields.age) await this.updateField(this.selectors.ageInput, fields.age);
-    if (fields.salary) await this.updateField(this.selectors.salaryInput, fields.salary);
-    if (fields.department) await this.updateField(this.selectors.departmentInput, fields.department);
+    if (fields.salary)
+      await this.updateField(this.selectors.salaryInput, fields.salary);
+    if (fields.department)
+      await this.updateField(this.selectors.departmentInput, fields.department);
   }
 
   /**
@@ -218,21 +235,29 @@ export class WebTablePage {
     }
 
     const row = this.findRowByText(rowText);
-    const cell = row.locator(`${this.selectors.tableCell}:nth-child(${columnIndex})`);
+    const cell = row.locator(
+      `${this.selectors.tableCell}:nth-child(${columnIndex})`
+    );
     return await cell.innerText();
   }
 
   /**
    * Verify that a cell has the expected value
    */
-  async verifyCellValue(rowText: string, columnName: string, expectedValue: string): Promise<void> {
+  async verifyCellValue(
+    rowText: string,
+    columnName: string,
+    expectedValue: string
+  ): Promise<void> {
     const columnIndex = this.columnMapping[columnName];
     if (!columnIndex) {
       throw new Error(`Column mapping not found for: ${columnName}`);
     }
 
     const row = this.findRowByText(rowText);
-    const cell = row.locator(`${this.selectors.tableCell}:nth-child(${columnIndex})`);
+    const cell = row.locator(
+      `${this.selectors.tableCell}:nth-child(${columnIndex})`
+    );
 
     const { expect } = await import("@playwright/test");
     await expect(cell).toHaveText(expectedValue);
@@ -241,7 +266,10 @@ export class WebTablePage {
   /**
    * Verify multiple cell values in a row
    */
-  async verifyCellValues(rowText: string, expectedValues: Record<string, string>): Promise<void> {
+  async verifyCellValues(
+    rowText: string,
+    expectedValues: Record<string, string>
+  ): Promise<void> {
     const { expect } = await import("@playwright/test");
     const row = this.findRowByText(rowText);
     await expect(row).toBeVisible();
@@ -252,7 +280,9 @@ export class WebTablePage {
         throw new Error(`Column mapping not found for field: ${field}`);
       }
 
-      const cell = row.locator(`${this.selectors.tableCell}:nth-child(${columnIndex})`);
+      const cell = row.locator(
+        `${this.selectors.tableCell}:nth-child(${columnIndex})`
+      );
       await expect(cell).toHaveText(value);
     }
   }
@@ -283,5 +313,9 @@ export class WebTablePage {
   async verifyTableVisible(): Promise<void> {
     const { expect } = await import("@playwright/test");
     await expect(this.page.locator(this.selectors.table)).toBeVisible();
+  }
+
+  async selectPageSize(row: number) {
+    await this.page.locator(this.selectors.rowsPerPageDropdown).selectOption(row.toString())
   }
 }

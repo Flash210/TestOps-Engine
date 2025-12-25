@@ -102,7 +102,7 @@ Examples:
   | Cierra  |
   | Alden   |
 
-@pagination
+@pagination @skip
 Scenario Outline: Change page size
   When I select "<rows>" rows from the page size dropdown
   Then the table should display max "<rows>" rows per page
@@ -139,18 +139,18 @@ Scenario: Cancel adding new record
   Then the registration form should be closed
   And the table should not contain "Test Cancel"
 
-@skip
-@ui
+
+@ui @skip
 Scenario: Verify Web Tables page UI
-  Then the Web Tables page should be visible
-  And the Add button should be displayed
-  And the search box should be displayed
-  And the table should be displayed
-  And the default records should be present
-@skip
-@ui
+  When the following elements should be visible
+  | Page |
+  | Add  |
+  | Search  |
+  | Table       |
+
+@ui @skip
 Scenario: Verify table columns
-  Then the table should have the following columns:
+  Then the table should have the following columns
     | First Name |
     | Last Name  |
     | Age        |
@@ -159,10 +159,10 @@ Scenario: Verify table columns
     | Department |
     | Action     |
 
-@ui @skip
+@ui 
 Scenario: Verify action buttons for each row
-  Then each table row should have an edit button
-  And each table row should have a delete button
+  Then each table row should have an "edit" button
+  And each table row should have a "delete" button
 
 @functional @skip
 Scenario: Verify table behavior after deleting all records

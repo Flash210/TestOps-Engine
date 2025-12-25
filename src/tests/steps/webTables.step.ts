@@ -9,6 +9,7 @@ import { expect } from "@playwright/test";
 import { pageFixture } from "../../hooks/pageFixture";
 import { WebTablePage, WebTableFormData } from "../../pages/webTable.page";
 import { CustomWorld } from "../../helpers/customWorld";
+import { exitCode } from "process";
 
 setDefaultTimeout(60 * 1000); // 60 seconds
 
@@ -330,5 +331,36 @@ Then(
 );
 
 Then("the registration form should be closed", async () => {
-  webPage.isFormClosed();
+  await webPage.isFormClosed();
 });
+
+When("the following elements should be visible", async (data: DataTable) => {
+  for (const [item] of data.rows()) {
+    await webPage.isItemVisible(item);
+  }
+});
+
+Then("the table should have the following columns", async (data: DataTable) => {
+  // Arrange - Use raw() to get all rows without treating first as header
+  const expectedColumns = data.raw().map((row) => row[0]);
+
+  // Act
+  const actualColumns = await webPage.getTableColumnNames();
+
+
+  // Assert
+  expect(actualColumns).toEqual(expectedColumns);
+});
+
+Then('each table row should have an {string} button',async(item:string)=>{
+ 
+const button =await webPage.doesEachDataRowHaveActionButton(item);
+expect(button).toBe(true )
+
+
+})
+
+Then('each table row should have a {string} button',async(item:string)=>{
+  const button =await webPage.doesEachDataRowHaveActionButton(item);
+  expect(button).toBe(true )
+})

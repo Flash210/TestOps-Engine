@@ -1,20 +1,30 @@
-import { Page } from "playwright";
+// import { Page } from "playwright";
+// export const pageFixture = {
+//   // @ts-ignore
+//   page: undefined as Page,
+// };
 
-// ✅ FIX #18: Improved type safety for pageFixture
-// OLD: export const pageFixture = {
-//        // @ts-ignore
-//        page: undefined as Page,
-//      };
-//      Issues:
-//      - Using @ts-ignore suppresses TypeScript errors
-//      - Type assertion 'undefined as Page' is unsafe
-//      - No runtime validation
-// NEW: Better type definition with proper typing
-export const pageFixture: { page: Page } = {
-  page: undefined as unknown as Page,
-};
 
-// ℹ️ Note: This is a shared fixture pattern used by Cucumber
-// The page instance is assigned in hooks.ts Before() hook
-// Alternative approach would be to use dependency injection, but this pattern
-// is acceptable for Cucumber.js integration
+// ✅ SAFE VERSION:
+import { Page } from 'playwright';
+
+class PageFixture {
+  private static _page: Page | null = null;
+
+  static set page(page: Page) {
+    this._page = page;
+  }
+
+  static get page(): Page {
+    if (!this._page) {
+      throw new Error('Page not initialized. Call pageFixture.page = page first.');
+    }
+    return this._page;
+  }
+
+  static reset() {
+    this._page = null;
+  }
+}
+
+export const pageFixture = PageFixture;

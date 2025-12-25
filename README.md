@@ -404,4 +404,4 @@ npx cucumber-js --tags "@smoke"       # Smoke only
 
 ---
 
-*Generated with ❤️ by Senior QA Engineer*
+*Generated with ❤️ by Houcem Eddine Mosbah*

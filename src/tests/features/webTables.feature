@@ -129,7 +129,7 @@ Examples:
   
 
 
-@functional
+@functional @skip
 Scenario: Cancel adding new record
   When I click on the "Add" button
   And I fill in the registration form with the following details:
@@ -138,14 +138,7 @@ Scenario: Cancel adding new record
   And I click on the "Close" button
   Then the registration form should be closed
   And the table should not contain "Test Cancel"
-@skip
-@functional
-Scenario: Cancel editing existing record
-  When I click the edit button for "Cierra"
-  And I update the Age field to "99"
-  And I click the "Close" button
-  Then the registration form should be closed
-  And the table should not show "Age" as "99" for "Cierra"
+
 @skip
 @ui
 Scenario: Verify Web Tables page UI

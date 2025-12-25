@@ -42,10 +42,18 @@ export class WebTablePage {
     editButton: '[title="Edit"]',
     deleteButton: '[title="Delete"]',
     rowsPerPageDropdown: "select[aria-label='rows per page']",
+
+    model: ".modal-content",
+
+    
   };
 
   constructor(page: Page) {
     this.page = page;
+  }
+
+  async isFormClosed() {
+    return this.page.locator(this.selectors.model).isHidden();
   }
 
   async navigateToWebTablesPage(): Promise<void> {
@@ -56,16 +64,17 @@ export class WebTablePage {
   }
 
   async clickButton(buttonName: string): Promise<void> {
-    switch (buttonName) {
-      case "Add":
+    switch (buttonName.toLowerCase().trim()) {
+      case "add":
         await this.page.locator(this.selectors.addButton).click();
         break;
-      case "Submit":
+      case "submit":
         await this.page.locator(this.selectors.submitButton).click();
         break;
 
-        case "Close":
-          await this.page.locator(this.selectors.closeButton)
+      case "close":
+        await this.page.locator(this.selectors.closeButton).click();
+        break;
 
       default:
         throw new Error(`Button with name ${buttonName} not recognized.`);
@@ -316,6 +325,8 @@ export class WebTablePage {
   }
 
   async selectPageSize(row: number) {
-    await this.page.locator(this.selectors.rowsPerPageDropdown).selectOption(row.toString())
+    await this.page
+      .locator(this.selectors.rowsPerPageDropdown)
+      .selectOption(row.toString());
   }
 }

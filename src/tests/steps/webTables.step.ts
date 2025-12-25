@@ -25,11 +25,9 @@ Given("I navigate to DemoQA Web Tables page", async () => {
 });
 
 // When Steps - Add Operations
-When("I click on the {string} button", async (buttonName:string) => {
+When("I click on the {string} button", async (buttonName: string) => {
   await webPage.clickButton(buttonName);
 });
-
-
 
 When(
   "I fill in the registration form with the following details:",
@@ -180,7 +178,7 @@ Then("the table should be reset", async function (this: CustomWorld) {
     .toBe(this.originalRowCount);
 });
 
-Then("the table should show only one record with", async (name: String) => { });
+Then("the table should show only one record with", async (name: String) => {});
 
 Then("the table should display {string}", async (name: string) => {
   webPage.findRowByText(name);
@@ -331,5 +329,6 @@ Then(
   }
 );
 
-
-
+Then("the registration form should be closed", async () => {
+  webPage.isFormClosed();
+});

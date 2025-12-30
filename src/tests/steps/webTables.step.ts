@@ -81,13 +81,6 @@ When(
   }
 );
 
-When(
-  "I add a new record with first name {string} and last name {string}",
-  async (firstName: string, lastName: string) => {
-    // TODO: Add a new record with specified first and last name
-    throw new Error("Step not implemented");
-  }
-);
 
 When("I add {int} records to the table", async (count: number) => {
   // TODO: Add specified number of records to the table

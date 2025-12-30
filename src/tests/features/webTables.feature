@@ -190,22 +190,5 @@ Scenario: Add record with special characters
         |O'Connor| Smith-Jones| special@test.com|35|55000|R&D|
   
 
-@data-persistence @skip
-Scenario: Verify data does not persist after refresh
-  When I add a new record with first name "Persistent" and last name "User"
-  And I refresh the page
-  Then the table should not contain "Persistent User"
 
-@concurrent @skip
-Scenario: Add and delete operations in sequence
-  When I add a new record with first name "Temporary" and last name "Record"
-  Then the table should contain "Temporary"
-  When I delete the record "Temporary"
-  Then the table should not contain "Temporary"
 
-@search @pagination @skip
-Scenario: Search results pagination
-  When I add 25 records to the table
-  And I select "10 rows" from the page size dropdown
-  And I enter "test" in the search box
-  Then the search results should be paginated correctly

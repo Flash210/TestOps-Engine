@@ -1,5 +1,6 @@
 import { Locator, Page } from "@playwright/test";
 import { config } from "../config/config";
+import { promises } from "dns";
 
 export interface WebTableFormData {
   firstName: string;
@@ -64,9 +65,9 @@ export class WebTablePage {
   }
 
   private getRowWithData() {
-    return this.page.locator(
-      ".rt-tbody .rt-tr-group .rt-tr.-odd, .rt-tbody .rt-tr-group .rt-tr.-even"
-    );
+    return this.page.locator(".rt-tbody .rt-tr-group").filter({
+      has: this.page.locator(".rt-td", { hasText: /\S/ }),
+    });
   }
 
   private getTableCells(): Locator {
@@ -282,17 +283,18 @@ export class WebTablePage {
   }
 
   async getRowCount(): Promise<number> {
-    const rows = this.getTableRows();
-    const count = await rows.count();
-    let nonEmptyRows = 0;
+    // const rows = this.getTableRows();
+    // const count = await rows.count();
+    // let nonEmptyRows = 0;
 
-    for (let i = 0; i < count; i++) {
-      const rowText = await rows.nth(i).textContent();
-      if (rowText && rowText.trim().length > 0) {
-        nonEmptyRows++;
-      }
-    }
-    return nonEmptyRows;
+    // for (let i = 0; i < count; i++) {
+    //   const rowText = await rows.nth(i).textContent();
+    //   if (rowText && rowText.trim().length > 0) {
+    //     nonEmptyRows++;
+    //   }
+    // }
+    // return nonEmptyRows;
+    return this.getRowWithData().count();
   }
 
   async tableContains(text: string): Promise<boolean> {
@@ -300,24 +302,21 @@ export class WebTablePage {
   }
 
   async getAllTableRecords(): Promise<WebTableFormData[]> {
-    const rows = this.getTableRows();
+    const rows = this.getRowWithData();
     const rowCount = await rows.count();
     const records: WebTableFormData[] = [];
 
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
-      const cells = row.locator(".rt-td");
-
-      const firstCellText = await cells.nth(0).innerText();
-      if (!firstCellText.trim()) continue;
+      const cells = await row.locator(".rt-td").allInnerTexts();
 
       const record: WebTableFormData = {
-        firstName: (await cells.nth(0).innerText()).trim(),
-        lastName: (await cells.nth(1).innerText()).trim(),
-        age: (await cells.nth(2).innerText()).trim(),
-        email: (await cells.nth(3).innerText()).trim(),
-        salary: (await cells.nth(4).innerText()).trim(),
-        department: (await cells.nth(5).innerText()).trim(),
+        firstName: cells[this.columnMapping["First Name"] - 1]?.trim() || "",
+        lastName: cells[this.columnMapping["Last Name"] - 1]?.trim() || "",
+        age: cells[this.columnMapping["Age"] - 1]?.trim() || "",
+        email: cells[this.columnMapping["Email"] - 1]?.trim() || "",
+        salary: cells[this.columnMapping["Salary"] - 1]?.trim() || "",
+        department: cells[this.columnMapping["Department"] - 1]?.trim() || "",
       };
 
       records.push(record);
@@ -486,5 +485,51 @@ export class WebTablePage {
   async verifyTableVisible(): Promise<void> {
     const { expect } = await import("@playwright/test");
     await expect(this.getTable()).toBeVisible();
+  }
+
+  async deleteAllRecords(): Promise<void> {
+    while ((await this.getDeleteButton().count()) > 0) {
+      await this.getDeleteButton().first().click();
+    }
+  }
+
+  async waitForTableToStabilize(): Promise<void> {
+    await this.page.waitForLoadState("networkidle");
+  }
+
+  async addNewRecord(): Promise<void> {
+    // Act
+    await this.getAddButton().click();
+
+    await this.getFirstNameInput().fill("John");
+    await this.getLastNameInput().fill("Doe");
+    await this.getEmailInput().fill("test@gmail.com");
+    await this.getAgeInput().fill("20");
+    await this.getSalaryInput().fill("20");
+    await this.getDepartmentInput().fill("Test");
+
+    await this.getSubmitButton().click();
+  }
+
+  async expectRecordToBeDisplayed() {
+    return this.getRowCount();
+  }
+
+  async isRowPresent(expected: Record<string, string>): Promise<boolean> {
+    let filteredRows = this.getRowWithData();
+
+    // Filter rows by each expected column value
+    for (const columnName in expected) {
+      const columnIndex = this.columnMapping[columnName];
+      if (columnIndex) {
+        filteredRows = filteredRows.filter({
+          has: this.page.locator(`.rt-td:nth-child(${columnIndex})`, {
+            hasText: expected[columnName],
+          }),
+        });
+      }
+    }
+
+    return (await filteredRows.count()) > 0;
   }
 }

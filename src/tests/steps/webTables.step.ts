@@ -95,8 +95,11 @@ When("I add {int} records to the table", async (count: number) => {
 });
 
 When("I add a new record to the table", async () => {
-  // TODO: Add a single new record with default/test data
-  throw new Error("Step not implemented");
+  // Act
+  await webPage.addNewRecord();
+
+  // Assert (implicit – stability)
+  await webPage.waitForTableToStabilize();
 });
 
 When(
@@ -170,10 +173,6 @@ When("I clear the search box", async () => {
 });
 
 Then("the table should be reset", async function (this: CustomWorld) {
-  // const rowCount = await webPage.getRowCount();
-
-  // expect(rowCount).toBe(this.originalRowCount);
-
   await expect
     .poll(async () => await webPage.getRowCount(), { timeout: 5000 })
     .toBe(this.originalRowCount);
@@ -271,6 +270,21 @@ Then(
   }
 );
 
+
+
+
+
+Then(
+  "the table should contain the following record:",
+  async (dataTable: DataTable) => {
+
+    const expected  =dataTable.hashes()
+
+    const exists = await webPage.isRowPresent(expected[0]);
+
+    expect(exists).toBe(true);
+  }
+);
 Then("the table should contain", async (name: string) => {
   const row = pageFixture.page.locator("");
   await expect(row).toHaveCount(0);
@@ -347,20 +361,31 @@ Then("the table should have the following columns", async (data: DataTable) => {
   // Act
   const actualColumns = await webPage.getTableColumnNames();
 
-
   // Assert
   expect(actualColumns).toEqual(expectedColumns);
 });
 
-Then('each table row should have an {string} button',async(item:string)=>{
- 
-const button =await webPage.doesEachDataRowHaveActionButton(item);
-expect(button).toBe(true )
+Then("each table row should have an {string} button", async (item: string) => {
+  const button = await webPage.doesEachDataRowHaveActionButton(item);
+  expect(button).toBe(true);
+});
 
+Then("each table row should have a {string} button", async (item: string) => {
+  const button = await webPage.doesEachDataRowHaveActionButton(item);
+  expect(button).toBe(true);
+});
 
-})
+When("I delete all records from the table", async function () {
+  // Arrange
 
-Then('each table row should have a {string} button',async(item:string)=>{
-  const button =await webPage.doesEachDataRowHaveActionButton(item);
-  expect(button).toBe(true )
-})
+  // Act
+  await webPage.deleteAllRecords();
+
+  // Assert
+  await webPage.waitForTableToStabilize();
+});
+
+Then("the table should display the new record", async function () {
+  // Assert
+  expect(await webPage.expectRecordToBeDisplayed()).toBe(1);
+});

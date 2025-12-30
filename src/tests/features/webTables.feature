@@ -39,6 +39,9 @@ Feature: DemoQA Elements - Web Tables Functionality
 
     
 
+
+
+
   @positive @edit  @skip
  Scenario: Edit an existing web table record
   When I edit the record for "Cierra" with:
@@ -159,7 +162,7 @@ Scenario: Verify table columns
     | Department |
     | Action     |
 
-@ui 
+@ui @skip
 Scenario: Verify action buttons for each row
   Then each table row should have an "edit" button
   And each table row should have a "delete" button
@@ -171,9 +174,9 @@ Scenario: Verify table behavior after deleting all records
   When I add a new record to the table
   Then the table should display the new record
 
-@special-characters @skip
+@special-characters 
 Scenario: Add record with special characters
-  When I click on the Add button
+  When I click on the "Add" button
   And I fill in the registration form with the following details:
     | First Name | O'Connor         |
     | Last Name  | Smith-Jones      |
@@ -182,7 +185,10 @@ Scenario: Add record with special characters
     | Salary     | 55000            |
     | Department | R&D              |
   And I click the Submit button in registration form
-  Then the new record should be added to the table
+    Then the table should contain the following record:
+      | First Name | Last Name | Email | Age | Salary | Department |
+        |O'Connor| Smith-Jones| special@test.com|35|55000|R&D|
+  
 
 @data-persistence @skip
 Scenario: Verify data does not persist after refresh

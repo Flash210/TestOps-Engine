@@ -216,6 +216,147 @@ jobs:
           echo "- Screenshots" >> $GITHUB_STEP_SUMMARY
           echo "- HTML Reports" >> $GITHUB_STEP_SUMMARY
 
+  # -------------------------------------------
+  # JOB 3: Send Email Notification
+  # -------------------------------------------
+  send-notification:
+    name: 📧 Send Email Notification
+    needs: [test, test-summary]  # Runs after both test and summary jobs complete
+    runs-on: ubuntu-latest
+    if: always()  # Always send notification, regardless of test results
+    
+    steps:
+      # STEP 1: Checkout code to access CODE_REVIEW_REPORT.md
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      # STEP 2: Download test results artifacts
+      - name: 📥 Download Test Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+          path: ./downloaded-results
+      
+      # STEP 3: Prepare email content with test results
+      - name: 📝 Prepare Email Content
+        id: prepare-email
+        run: |
+          # Determine test status
+          if [ "${{ needs.test.result }}" == "success" ]; then
+            STATUS_EMOJI="✅"
+            STATUS_TEXT="PASSED"
+            STATUS_COLOR="green"
+          else
+            STATUS_EMOJI="❌"
+            STATUS_TEXT="FAILED"
+            STATUS_COLOR="red"
+          fi
+          
+          # Create email body
+          cat > email_body.html << EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .header { background-color: #0366d6; color: white; padding: 20px; text-align: center; }
+              .content { padding: 20px; }
+              .status { font-size: 24px; font-weight: bold; color: ${STATUS_COLOR}; }
+              .info-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              .info-table th, .info-table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+              .info-table th { background-color: #f6f8fa; font-weight: bold; }
+              .footer { background-color: #f6f8fa; padding: 15px; text-align: center; font-size: 12px; color: #666; }
+              .button { display: inline-block; padding: 10px 20px; background-color: #0366d6; color: white; text-decoration: none; border-radius: 5px; margin: 10px 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>${STATUS_EMOJI} TestOps Engine - Test Execution Report</h1>
+            </div>
+            <div class="content">
+              <p class="status">Status: ${STATUS_TEXT}</p>
+              
+              <h2>📊 Execution Details</h2>
+              <table class="info-table">
+                <tr>
+                  <th>Workflow Run</th>
+                  <td>#${{ github.run_number }}</td>
+                </tr>
+                <tr>
+                  <th>Repository</th>
+                  <td>${{ github.repository }}</td>
+                </tr>
+                <tr>
+                  <th>Branch</th>
+                  <td>${{ github.ref_name }}</td>
+                </tr>
+                <tr>
+                  <th>Commit</th>
+                  <td>${{ github.sha }}</td>
+                </tr>
+                <tr>
+                  <th>Triggered By</th>
+                  <td>${{ github.actor }}</td>
+                </tr>
+                <tr>
+                  <th>Timestamp</th>
+                  <td>$(date -u '+%Y-%m-%d %H:%M:%S UTC')</td>
+                </tr>
+              </table>
+              
+              <h2>📋 Quick Actions</h2>
+              <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" class="button">View Full Workflow</a>
+              <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts" class="button">Download Artifacts</a>
+              
+              <h2>📄 Code Review Report</h2>
+              <p>The complete code review report is attached to this email.</p>
+              
+              <h2>🔍 What's Next?</h2>
+              <ul>
+                <li>Review the test results in the GitHub Actions workflow</li>
+                <li>Check the attached code review report for refactoring details</li>
+                <li>Download artifacts for detailed test reports and screenshots</li>
+                <li>Address any failing tests if status is FAILED</li>
+              </ul>
+            </div>
+            <div class="footer">
+              <p>This is an automated notification from TestOps Engine CI/CD Pipeline</p>
+              <p>GitHub Actions • ${{ github.repository }}</p>
+            </div>
+          </body>
+          </html>
+          EOF
+          
+          echo "Email content prepared successfully"
+      
+      # STEP 4: Send email notification with report
+      - name: 📧 Send Email with Test Report
+        uses: dawidd6/action-send-mail@v3
+        with:
+          # SMTP server configuration (using Gmail)
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: true
+          
+          # Email credentials (stored in GitHub Secrets)
+          # You need to add these secrets in your GitHub repository settings
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          
+          # Email details
+          subject: "${{ needs.test.result == 'success' && '✅' || '❌' }} TestOps Engine - Pipeline #${{ github.run_number }} - ${{ needs.test.result }}"
+          to: houssemltaif77@gmail.com
+          from: TestOps Engine CI/CD <${{ secrets.EMAIL_USERNAME }}>
+          
+          # Email body (HTML format)
+          html_body: file://email_body.html
+          
+       
+          
+          # Optional: Add priority
+          priority: normal
+
 # ============================================
 # NOTES FOR BEGINNERS
 # ============================================
@@ -228,3 +369,29 @@ jobs:
 # 7. Node.js 20.x is required for Cucumber.js 12.3.0+
 # 8. Essential fonts for Ubuntu 24.04: liberation, dejavu, fontconfig
 # 9. --with-deps installs browsers AND system dependencies
+# 
+# ============================================
+# EMAIL NOTIFICATION SETUP
+# ============================================
+# To enable email notifications, you need to configure GitHub Secrets:
+# 
+# 1. Go to your GitHub repository
+# 2. Click Settings → Secrets and variables → Actions
+# 3. Add the following secrets:
+#    - EMAIL_USERNAME: Your Gmail address (e.g., your-email@gmail.com)
+#    - EMAIL_PASSWORD: Your Gmail App Password (NOT your regular password)
+# 
+# How to create Gmail App Password:
+# 1. Go to your Google Account (myaccount.google.com)
+# 2. Security → 2-Step Verification (enable if not already)
+# 3. App passwords → Generate new app password
+# 4. Select "Mail" and "Other (Custom name)"
+# 5. Copy the 16-character password
+# 6. Use this password in EMAIL_PASSWORD secret
+# 
+# The email will include:
+# - Test execution status (PASSED/FAILED)
+# - Workflow details (run number, branch, commit, etc.)
+# - Links to view full workflow and download artifacts
+# - Attached CODE_REVIEW_REPORT.md file
+

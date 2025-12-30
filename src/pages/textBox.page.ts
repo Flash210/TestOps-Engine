@@ -1,4 +1,5 @@
-import { Page, expect } from '@playwright/test';
+import { Page, expect } from "@playwright/test";
+import { config } from "../config/config";
 
 export class TextBoxPage {
   private page: Page;
@@ -8,24 +9,24 @@ export class TextBoxPage {
     // Navigation
     elementsCard: 'div.card:has-text("Elements")',
     textBoxMenuItem: 'span:has-text("Text Box")',
-    
+
     // Form Fields
-    fullNameInput: '#userName',
-    emailInput: '#userEmail',
-    currentAddressTextarea: '#currentAddress',
-    permanentAddressTextarea: '#permanentAddress',
-    submitButton: '#submit',
-    
+    fullNameInput: "#userName",
+    emailInput: "#userEmail",
+    currentAddressTextarea: "#currentAddress",
+    permanentAddressTextarea: "#permanentAddress",
+    submitButton: "#submit",
+
     // Output Section
-    outputContainer: '#output',
-    outputName: '#output #name',
-    outputEmail: '#output #email',
-    outputCurrentAddress: '#output #currentAddress',
-    outputPermanentAddress: '#output #permanentAddress',
-    
+    outputContainer: "#output",
+    outputName: "#output #name",
+    outputEmail: "#output #email",
+    outputCurrentAddress: "#output #currentAddress",
+    outputPermanentAddress: "#output #permanentAddress",
+
     // Page Elements
-    pageTitle: '.main-header',
-    textBoxForm: '#userForm'
+    pageTitle: ".main-header",
+    textBoxForm: "#userForm",
   };
 
   constructor(page: Page) {
@@ -34,7 +35,7 @@ export class TextBoxPage {
 
   // Navigation Methods
   async navigateToDemoQA(): Promise<void> {
-    await this.page.goto('https://demoqa.com/', { waitUntil: 'domcontentloaded' });
+    await this.page.goto(config.baseURL, { waitUntil: "domcontentloaded" });
   }
 
   async clickElementsCard(): Promise<void> {
@@ -107,39 +108,54 @@ export class TextBoxPage {
   }
 
   async getOutputName(): Promise<string> {
-    return await this.page.locator(this.selectors.outputName).textContent() || '';
+    return (
+      (await this.page.locator(this.selectors.outputName).textContent()) || ""
+    );
   }
 
   async getOutputEmail(): Promise<string> {
-    return await this.page.locator(this.selectors.outputEmail).textContent() || '';
+    return (
+      (await this.page.locator(this.selectors.outputEmail).textContent()) || ""
+    );
   }
 
   async getOutputCurrentAddress(): Promise<string> {
-    return await this.page.locator(this.selectors.outputCurrentAddress).textContent() || '';
+    return (
+      (await this.page
+        .locator(this.selectors.outputCurrentAddress)
+        .textContent()) || ""
+    );
   }
 
   async getOutputPermanentAddress(): Promise<string> {
-    return await this.page.locator(this.selectors.outputPermanentAddress).textContent() || '';
+    return (
+      (await this.page
+        .locator(this.selectors.outputPermanentAddress)
+        .textContent()) || ""
+    );
   }
 
-  async verifyOutputContains(field: string, expectedValue: string): Promise<void> {
-    let actualValue = '';
-    
-    switch(field.toLowerCase()) {
-      case 'name':
+  async verifyOutputContains(
+    field: string,
+    expectedValue: string
+  ): Promise<void> {
+    let actualValue = "";
+
+    switch (field.toLowerCase()) {
+      case "name":
         actualValue = await this.getOutputName();
         break;
-      case 'email':
+      case "email":
         actualValue = await this.getOutputEmail();
         break;
-      case 'current address':
+      case "current address":
         actualValue = await this.getOutputCurrentAddress();
         break;
-      case 'permanent address':
+      case "permanent address":
         actualValue = await this.getOutputPermanentAddress();
         break;
     }
-    
+
     expect(actualValue).toContain(expectedValue);
   }
 
@@ -149,29 +165,31 @@ export class TextBoxPage {
   }
 
   async getPageTitle(): Promise<string> {
-    return await this.page.locator(this.selectors.pageTitle).textContent() || '';
+    return (
+      (await this.page.locator(this.selectors.pageTitle).textContent()) || ""
+    );
   }
 
   async isFieldEmpty(fieldName: string): Promise<boolean> {
-    let selector = '';
-    
-    switch(fieldName.toLowerCase()) {
-      case 'full name':
+    let selector = "";
+
+    switch (fieldName.toLowerCase()) {
+      case "full name":
         selector = this.selectors.fullNameInput;
         break;
-      case 'email':
+      case "email":
         selector = this.selectors.emailInput;
         break;
-      case 'current address':
+      case "current address":
         selector = this.selectors.currentAddressTextarea;
         break;
-      case 'permanent address':
+      case "permanent address":
         selector = this.selectors.permanentAddressTextarea;
         break;
     }
-    
+
     const value = await this.page.locator(selector).inputValue();
-    return value === '';
+    return value === "";
   }
 
   async clearAllFields(): Promise<void> {
@@ -183,12 +201,12 @@ export class TextBoxPage {
 
   async getEmailValidationState(): Promise<string> {
     const emailField = this.page.locator(this.selectors.emailInput);
-    const className = await emailField.getAttribute('class') || '';
-    
-    if (className.includes('field-error')) {
-      return 'invalid';
+    const className = (await emailField.getAttribute("class")) || "";
+
+    if (className.includes("field-error")) {
+      return "invalid";
     }
-    return 'valid';
+    return "valid";
   }
 }
 
